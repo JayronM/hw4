@@ -143,6 +143,7 @@ protected:
     AVLNode<Key,Value>* leftRotate(AVLNode<Key,Value>* node);
     AVLNode<Key,Value>* rightRotate(AVLNode<Key,Value>* node);
     int height(AVLNode<Key,Value>* node) const;
+		void transplant(AVLNode<Key,Value>* u, AVLNode<Key,Value>* v);
 };
 
 /*
@@ -193,6 +194,19 @@ AVLNode<Key, Value>* AVLTree<Key, Value>::leftRotate(AVLNode<Key, Value>* crt)
     y->setBalance(rightHt-leftHt);
     
 		return y;
+}
+
+template<class Key, class Value>
+void AVLTree<Key, Value>::transplant(AVLNode<Key,Value>* u, AVLNode<Key,Value>* v){
+	if (u->getParent() ==nullptr){
+		this->root_=v;
+	}else if(u == u->getParent()->getLeft()){
+		u->getParent()->setLeft(v);
+	} else{
+		u->getParent()->setRight(v);
+	} if(v != nullptr){
+		v->setParent(u->getParent());
+	}
 }
 //rotate node with left child, going toward the right, clockwise per se
 template<class Key, class Value>
@@ -301,38 +315,68 @@ void AVLTree<Key, Value>:: remove(const Key& key)
 	if(removedNode ==nullptr){
 		return;
 	}
-	//two children swap with predecessor
-	if(removedNode->getLeft()!= nullptr&& removedNode->getRight()!= nullptr){
-		AVLNode<Key, Value>* predsr = static_cast<AVLNode<Key, Value>*>(this->predecessor(removedNode));
-		this->nodeSwap(removedNode, predsr);
-		removedNode = predsr;
-	}
+	AVLNode<Key, Value>* nodetorebalance = nullptr;
 
-	//only having one child
-	AVLNode<Key, Value>* child = nullptr;
-	if(removedNode->getLeft()!= nullptr){
-		child = static_cast<AVLNode<Key, Value>*>(removedNode->getLeft());
-	} else{
-		child = static_cast<AVLNode<Key, Value>*>(removedNode->getRight());
-	}
-
-	AVLNode<Key, Value>* parent = static_cast<AVLNode<Key, Value>*>(removedNode->getParent());
-	if(child!= nullptr){
-		child->setParent(parent);
-	}
-	if(parent ==nullptr){
-		this->root_ = child;
-		delete removedNode;
-	} else{
-		if(parent->getLeft() == removedNode){
-			parent->setLeft(child);
-		} else{
-			parent->setRight(child);
+	//no left child
+	if(removedNode->getLeft()== nullptr){
+		nodetorebalance = removedNode->getParent();
+		transplant(removedNode, removedNode->getRight());
+	}//no right child
+	else if(removedNode-> getRight() == nullptr){
+		nodetorebalance = removedNode->getParent();
+		transplant(removedNode, removedNode->getLeft());
+	} else{ //two children
+		AVLNode<Key, Value>* pred = static_cast<AVLNode<Key, Value>*>(this->predecessor(removedNode));
+		
+		
+		if(pred->getParent() != removedNode){
+			transplant(pred, pred->getLeft());
+			pred->setLeft(removedNode->getLeft());
+			if(pred->getLeft() != nullptr){
+				pred->getLeft()->setParent(pred);
+			} 
+			transplant(removedNode, pred);
+			pred->setRight(removedNode->getRight());
+			if(pred->getRight() != nullptr){
+				pred->getRight()->setParent(pred);
+			}
+		} 
+		else{
+				transplant(removedNode, pred);
+				pred->setRight(removedNode->getRight());
+				if(pred->getRight() != nullptr){
+					pred->getRight()->setParent(pred);
+				}	
 		}
-		delete removedNode;
+	 nodetorebalance = (pred->getParent() == removedNode ? pred:pred->getParent());
+	 pred->setBalance(removedNode->getBalance());
+	}
+	delete removedNode;
+	// //only having one child
+	// //AVLNode<Key, Value>* child = nullptr;
+	// if(removedNode->getLeft()!= nullptr){
+	// 	child = static_cast<AVLNode<Key, Value>*>(removedNode->getLeft());
+	// } else{
+	// 	child = static_cast<AVLNode<Key, Value>*>(removedNode->getRight());
+	// }
+
+	// AVLNode<Key, Value>* parent = static_cast<AVLNode<Key, Value>*>(removedNode->getParent());
+	// if(child!= nullptr){
+	// 	child->setParent(parent);
+	// }
+	// if(parent ==nullptr){
+	// 	this->root_ = child;
+	// 	delete removedNode;
+	// } else{
+	// 	if(parent->getLeft() == removedNode){
+	// 		parent->setLeft(child);
+	// 	} else{
+	// 		parent->setRight(child);
+	// 	}
+	// 	delete removedNode;
 
 		//rebalnce from parent
-		AVLNode<Key, Value>* node = parent;
+		AVLNode<Key, Value>* node = nodetorebalance;
 		while(node!=nullptr){
 			int leftHt = height(node->getLeft());
 			int rightHt = height(node->getRight());
@@ -342,22 +386,24 @@ void AVLTree<Key, Value>:: remove(const Key& key)
 			if(node->getBalance() ==2 || node->getBalance()==-2){
 				AVLNode<Key, Value>* subtree = rebalance(node);
 				
-				AVLNode<Key, Value>* nextParent = subtree->getParent();
+				AVLNode<Key, Value>* ParentPostRotation = subtree->getParent();
 
-				if(nextParent==nullptr){
+				if(ParentPostRotation==nullptr){
 					this->root_ =subtree;
 				} else{
-					if(node ==nextParent->getLeft()){
-						nextParent->setLeft(subtree);
+					if(node ==ParentPostRotation->getLeft()){
+						ParentPostRotation->setLeft(subtree);
 					} else{
-						nextParent->setRight(subtree);
+						ParentPostRotation->setRight(subtree);
 					}
 				}
-				node = node->getParent();
+				node = ParentPostRotation;
+			} else{
+					node = node->getParent();
 			}
 		}
 	}
-}
+
 
 template<class Key, class Value>
 void AVLTree<Key, Value>::nodeSwap( AVLNode<Key,Value>* n1, AVLNode<Key,Value>* n2)
