@@ -338,9 +338,11 @@ void AVLTree<Key, Value>:: remove(const Key& key)
 			int rightHt = height(node->getRight());
 
 			node->setBalance(rightHt-leftHt);
+
 			if(node->getBalance() ==2 || node->getBalance()==-2){
 				AVLNode<Key, Value>* subtree = rebalance(node);
-				AVLNode<Key, Value>* nextParent = node->getParent();
+				
+				AVLNode<Key, Value>* nextParent = subtree->getParent();
 
 				if(nextParent==nullptr){
 					this->root_ =subtree;
