@@ -315,41 +315,40 @@ void AVLTree<Key, Value>:: remove(const Key& key)
 	if(removedNode ==nullptr){
 		return;
 	}
+
 	AVLNode<Key, Value>* nodetorebalance = nullptr;
 
 	//no left child
 	if(removedNode->getLeft()== nullptr){
 		nodetorebalance = removedNode->getParent();
 		transplant(removedNode, removedNode->getRight());
-	}//no right child
-	else if(removedNode-> getRight() == nullptr){
+	}
+	//no right child
+	else if(removedNode->getRight() == nullptr){
 		nodetorebalance = removedNode->getParent();
 		transplant(removedNode, removedNode->getLeft());
-	} else{ //two children
-		AVLNode<Key, Value>* pred = static_cast<AVLNode<Key, Value>*>(this->predecessor(removedNode));
+	} 
+	
+	else{ //two children
+		AVLNode<Key, Value>* succ = static_cast<AVLNode<Key, Value>*>(this->successor(removedNode));
 		
-		
-		if(pred->getParent() != removedNode){
-			transplant(pred, pred->getLeft());
-			pred->setLeft(removedNode->getLeft());
-			if(pred->getLeft() != nullptr){
-				pred->getLeft()->setParent(pred);
+		if(succ->getParent() != removedNode){
+			nodetorebalance = succ->getParent();
+			transplant(succ, succ->getRight());
+			succ->setRight(removedNode->getRight());
+			if(succ->getRight() != nullptr){
+				succ->getRight()->setParent(succ);
 			} 
-			transplant(removedNode, pred);
-			pred->setRight(removedNode->getRight());
-			if(pred->getRight() != nullptr){
-				pred->getRight()->setParent(pred);
-			}
 		} 
 		else{
-				transplant(removedNode, pred);
-				pred->setRight(removedNode->getRight());
-				if(pred->getRight() != nullptr){
-					pred->getRight()->setParent(pred);
-				}	
+				nodetorebalance = succ;
 		}
-	 nodetorebalance = (pred->getParent() == removedNode ? pred:pred->getParent());
-	 pred->setBalance(removedNode->getBalance());
+		transplant(removedNode, succ);
+	succ->setLeft(removedNode->getLeft());
+		if(succ->getLeft() != nullptr){
+			succ->getLeft()->setParent(succ);
+		}	
+	 succ->setBalance(removedNode->getBalance());
 	}
 	delete removedNode;
 	// //only having one child
